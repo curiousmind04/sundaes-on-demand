@@ -6,6 +6,7 @@ import {
 import OrderEntry from "../OrderEntry";
 import { rest } from "msw";
 import { server } from "../../../mocks/server.js";
+import userEvent from "@testing-library/user-event";
 
 test("handles errors for scoops and toppings routes", async () => {
   server.resetHandlers(
@@ -24,4 +25,28 @@ test("handles errors for scoops and toppings routes", async () => {
 
     expect(alerts).toHaveLength(2);
   });
+});
+
+test("disable order button if there are no scoops ordered", async () => {
+  const user = userEvent.setup();
+  render(<OrderEntry />);
+
+  //order button should be disables at first, even before options load
+  const orderButton = screen.getByRole("button", {
+    name: "Order Sundae!",
+  });
+  expect(orderButton).toBeDisabled();
+
+  //expect order button to be enabled after adding scoop
+  const vanillaInput = await screen.findByRole("spinbutton", {
+    name: "Vanilla",
+  });
+  await user.clear(vanillaInput);
+  await user.type(vanillaInput, "1");
+  expect(orderButton).toBeEnabled();
+
+  //expect order button to be disabled again after removing scoop
+  await user.clear(vanillaInput);
+  await user.type(vanillaInput, "0");
+  expect(orderButton).toBeDisabled();
 });
